@@ -3,8 +3,10 @@ package xh.rabbit.version_upgrade
 import android.app.Activity
 import android.content.Context
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.net.Uri
 import android.os.Build
+import android.os.Environment
 import android.util.Log
 import androidx.core.content.FileProvider
 import io.flutter.embedding.engine.plugins.FlutterPlugin
@@ -16,6 +18,7 @@ import io.flutter.plugin.common.MethodChannel
 import io.flutter.plugin.common.MethodChannel.MethodCallHandler
 import io.flutter.plugin.common.MethodChannel.Result
 import java.io.File
+import android.os.Environment.MEDIA_MOUNTED
 
 /** VersionUpgradePlugin */
 class VersionUpgradePlugin: FlutterPlugin,
@@ -61,10 +64,11 @@ class VersionUpgradePlugin: FlutterPlugin,
           return
         }
         val name = url.split("/").lastOrNull() ?: return
-        apkFile = File(context.externalCacheDir, name)
+        val saveDir = getSaveDir()
+        apkFile = File(saveDir, name)
         contentManager.download(
           urls = arrayListOf(url),
-          saveDir = context.externalCacheDir!!.absolutePath,
+          saveDir = saveDir!!.absolutePath,
           listener = this
         )
       }
@@ -142,6 +146,19 @@ class VersionUpgradePlugin: FlutterPlugin,
 //      Logger.e(ignored)
       Log.e(TAG, "installApk failure: ${ignored.localizedMessage}")
     }
+  }
+
+  private fun getSaveDir(): File? {
+    return if (MEDIA_MOUNTED == Environment.getExternalStorageState() && hasExternalStoragePermission(context)) {
+      context.externalCacheDir
+    } else {
+      context.cacheDir
+    }
+  }
+
+  private fun hasExternalStoragePermission(context: Context): Boolean {
+    val perm = context.checkCallingOrSelfPermission(android.Manifest.permission.WRITE_EXTERNAL_STORAGE)
+    return perm == PackageManager.PERMISSION_GRANTED
   }
 
 }

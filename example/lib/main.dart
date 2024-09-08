@@ -24,13 +24,17 @@ class _MyAppState extends State<MyApp> {
   final _versionUpgradePlugin = VersionUpgrade();
 
   _versionUpgrade() async {
-    final status1 = await Permission.storage.request();
-    final status2 = await Permission.manageExternalStorage.request();
-    if (status1.isGranted && status2.isGranted) {
-      var url = "https://roboland-deliv.ubtrobot.com/apks/cariabot/prod/36/com.ubt.cardplayer_prodRelease_v1.2.11_36_240709.apk";
-      _versionUpgradePlugin.downloadApk(url, "xh.rabbit.version_upgrade_example");
-      _showDialog();
-    }
+    // final status1 = await Permission.storage.request();
+    // final status2 = await Permission.manageExternalStorage.request();
+    // if (status1.isGranted && status2.isGranted) {
+    //   var url = "https://roboland-deliv.ubtrobot.com/apks/cariabot/prod/36/com.ubt.cardplayer_prodRelease_v1.2.11_36_240709.apk";
+    //   _versionUpgradePlugin.downloadApk(url, "xh.rabbit.version_upgrade_example");
+    //   _showDialog();
+    // }
+
+    var url = "https://roboland-deliv.ubtrobot.com/apks/cariabot/prod/36/com.ubt.cardplayer_prodRelease_v1.2.11_36_240709.apk";
+    _versionUpgradePlugin.downloadApk(url, "xh.rabbit.version_upgrade_example");
+    _showDialog();
   }
 
   _showDialog() async {
