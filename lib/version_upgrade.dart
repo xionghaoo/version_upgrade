@@ -6,6 +6,6 @@ class VersionUpgrade {
 
   Stream<int> get progress => VersionUpgradePlatform.instance.progressStream;
 
-  Future<dynamic> downloadApk(String url, String packageName) =>
-      VersionUpgradePlatform.instance.downloadApk(url, packageName);
+  Future<dynamic> downloadApk(String url) =>
+      VersionUpgradePlatform.instance.downloadApk(url);
 }

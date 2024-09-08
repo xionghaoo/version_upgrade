@@ -28,7 +28,7 @@ abstract class VersionUpgradePlatform extends PlatformInterface {
 
   abstract Stream<int> progressStream;
 
-  Future<dynamic> downloadApk(String url, String packageName) {
+  Future<dynamic> downloadApk(String url) {
     throw UnimplementedError('downloadApk() has not been implemented.');
   }
 }

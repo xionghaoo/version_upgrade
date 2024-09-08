@@ -14,10 +14,9 @@ class MethodChannelVersionUpgrade extends VersionUpgradePlatform {
   late Stream<int> _updateStream = _eventChannel.receiveBroadcastStream().map((dynamic data) => data);
 
   @override
-  Future<dynamic> downloadApk(String url, String packageName) async {
+  Future<dynamic> downloadApk(String url) async {
     return await methodChannel.invokeListMethod<String>('downloadApk', {
-      "url": url,
-      "packageName": packageName
+      "url": url
     });
   }
 

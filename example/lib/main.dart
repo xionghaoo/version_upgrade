@@ -33,7 +33,7 @@ class _MyAppState extends State<MyApp> {
     // }
 
     var url = "https://roboland-deliv.ubtrobot.com/apks/cariabot/prod/36/com.ubt.cardplayer_prodRelease_v1.2.11_36_240709.apk";
-    _versionUpgradePlugin.downloadApk(url, "xh.rabbit.version_upgrade_example");
+    _versionUpgradePlugin.downloadApk(url);
     _showDialog();
   }
 
