@@ -6,25 +6,18 @@ import android.app.Service
 import android.content.Context
 import android.content.Intent
 import android.content.ServiceConnection
+import android.content.res.Resources
 import android.os.Binder
 import android.os.Build
-import android.os.Environment
 import android.os.IBinder
 import android.util.Log
+import android.view.View
 import androidx.core.app.NotificationCompat
 import com.liulishuo.okdownload.DownloadContext
-import com.liulishuo.okdownload.DownloadContextListener
-import com.liulishuo.okdownload.DownloadListener
 import com.liulishuo.okdownload.DownloadTask
 import com.liulishuo.okdownload.core.Util
-import com.liulishuo.okdownload.core.breakpoint.BreakpointInfo
 import com.liulishuo.okdownload.core.cause.EndCause
-import com.liulishuo.okdownload.core.cause.ResumeFailedCause
 import java.io.File
-import java.io.FileOutputStream
-import java.io.InputStream
-import java.io.OutputStream
-import java.lang.Exception
 import kotlin.math.roundToInt
 
 class ContentDownloadService : Service() {
@@ -32,7 +25,7 @@ class ContentDownloadService : Service() {
     companion object {
         private const val TAG = "ContentDownloadService"
 
-        private const val CHANNEL_ID = "content_download_channel"
+        private const val CHANNEL_ID = "apk_download_channel"
         private const val EXTRA_URLS = "xh.rabbit.download.ContentDownloadService.EXTRA_URLS"
         private const val EXTRA_SAVE_DIR = "xh.rabbit.download.ContentDownloadService.EXTRA_SAVE_DIR"
         private const val NOTIFICATION_ID = 3
@@ -62,7 +55,7 @@ class ContentDownloadService : Service() {
     private val downloadListener = object : ContentDownloadListener() {
         override fun fetchStart(task: DownloadTask, blockIndex: Int, contentLength: Long) {
             callback?.onStart()
-            mNotifyManager?.notify(NOTIFICATION_ID, mBuilder.build())
+            notifyDownload(NotifyStatus.START)
         }
 
         override fun fetchProgress(task: DownloadTask, blockIndex: Int, increaseBytes: Long) {
@@ -72,7 +65,7 @@ class ContentDownloadService : Service() {
             Log.d(TAG, "percent: $percent%, ${task.info?.totalOffset}, ${totalLength}, $readableTotalLength")
             Log.d(TAG, "fetchProgress: ${task.id}")
             callback?.onProgress(percent, task.filename, currentCount, totalCount)
-            mNotifyManager?.notify(NOTIFICATION_ID, mBuilder.build())
+            notifyDownload(NotifyStatus.PROGRESS, percent)
         }
 
         override fun fetchEnd(task: DownloadTask, blockIndex: Int, contentLength: Long) {
@@ -87,7 +80,13 @@ class ContentDownloadService : Service() {
         override fun taskEnd(task: DownloadTask, cause: EndCause, realCause: Exception?) {
             Log.e(TAG,"task ${task.getTag(1)}, ${cause}, End: $realCause")
             callback?.onEnd(cause, realCause?.toString())
+            if (cause == EndCause.COMPLETED) {
+                notifyDownload(NotifyStatus.SUCCESS)
+            } else {
+                notifyDownload(NotifyStatus.ERROR)
+            }
         }
+
     }
     private var totalCount: Int = 0
     private var currentCount: Int = 0
@@ -123,10 +122,8 @@ class ContentDownloadService : Service() {
     private fun initialNotification() {
         mNotifyManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
         mBuilder = NotificationCompat.Builder(this, CHANNEL_ID)
-
-        val appName = getString(applicationInfo.labelRes)
+        val appName = if (applicationInfo.labelRes == Resources.ID_NULL) "下载服务" else resources.getString(applicationInfo.labelRes)
         val icon = applicationInfo.icon
-
         mBuilder.setContentTitle(appName)
             .setSmallIcon(icon)
             .setOnlyAlertOnce(true)
@@ -135,8 +132,8 @@ class ContentDownloadService : Service() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             // Create the NotificationChannel, but only on API 26+ because
             // the NotificationChannel class is new and not in the support library
-            val name = "content download task"
-            val description = "content download task"
+            val name = "APK download task"
+            val description = "APK download task"
             val channel = NotificationChannel(CHANNEL_ID, name, NotificationManager.IMPORTANCE_DEFAULT)
             channel.description = description
             // Register the channel with the system
@@ -157,23 +154,45 @@ class ContentDownloadService : Service() {
         Log.d(TAG, "download: $urls")
         if (urls == null || saveDir == null) return
         val parentFile = File(saveDir!!)
-        // 下载到内部文件夹
-        val builder: DownloadContext.Builder = DownloadContext.QueueSet()
-            .setParentPathFile(parentFile)
-            .setWifiRequired(true)
-            .setMinIntervalMillisCallbackProcess(50)
-            .commit()
-        urls?.forEachIndexed { index, url ->
-            val task = DownloadTask.Builder(url, parentFile)
-                .setConnectionCount(1)
-                .build()
-                .addTag(1, index)
-            builder.bindSetTask(task)
+        try {
+            // 下载到内部文件夹
+            val builder: DownloadContext.Builder = DownloadContext.QueueSet()
+                .setParentPathFile(parentFile)
+                .setWifiRequired(true)
+                .setMinIntervalMillisCallbackProcess(50)
+                .commit()
+            urls?.forEachIndexed { index, url ->
+                val task = DownloadTask.Builder(url, parentFile)
+                    .setConnectionCount(1)
+                    .build()
+                    .addTag(1, index)
+                builder.bindSetTask(task)
+            }
+            totalCount = urls!!.size
+            currentCount = 0
+            downloadContext = builder.build()
+            downloadContext?.startOnSerial(downloadListener)
+        } catch (e: Exception) {
+            notifyDownload(NotifyStatus.ERROR)
+            e.printStackTrace()
         }
-        totalCount = urls!!.size
-        currentCount = 0
-        downloadContext = builder.build()
-        downloadContext?.startOnSerial(downloadListener)
+    }
+
+    private fun notifyDownload(status: NotifyStatus, percent: Int = 0) {
+        when (status) {
+            NotifyStatus.START -> mBuilder.setContentText("开始下载")
+            NotifyStatus.ERROR -> mBuilder.setContentText("下载失败，请重新下载")
+            NotifyStatus.PROGRESS -> {
+                mBuilder.setContentText("正在下载$percent%")
+                    .setProgress(100, percent, false)
+            }
+            NotifyStatus.SUCCESS -> mBuilder.setContentText("下载完成")
+        }
+        mNotifyManager?.notify(NOTIFICATION_ID, mBuilder.build())
+    }
+
+    enum class NotifyStatus {
+        START, SUCCESS, PROGRESS, ERROR
     }
 
     inner class DownloadBinder : Binder() {

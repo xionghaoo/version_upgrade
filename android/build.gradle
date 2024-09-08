@@ -68,11 +68,13 @@ android {
 }
 
 dependencies {
-    implementation 'androidx.core:core-ktx:1.13.1.0'
+    implementation 'androidx.core:core-ktx:1.13.1'
     implementation 'androidx.appcompat:appcompat:1.7.0'
     implementation 'com.google.android.material:material:1.12.0'
+//    implementation 'xh.rabbit.core:core:1.0.1'
     def okdownload_version = '1.0.7'
     implementation "com.liulishuo.okdownload:okdownload:$okdownload_version"
     implementation "com.liulishuo.okdownload:sqlite:$okdownload_version"
     implementation "com.liulishuo.okdownload:okhttp:$okdownload_version"
+    implementation("com.squareup.okhttp3:okhttp:4.12.0")
 }

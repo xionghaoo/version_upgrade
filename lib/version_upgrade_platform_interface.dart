@@ -1,3 +1,6 @@
+import 'dart:ffi';
+
+import 'package:flutter/material.dart';
 import 'package:plugin_platform_interface/plugin_platform_interface.dart';
 
 import 'version_upgrade_method_channel.dart';
@@ -23,7 +26,9 @@ abstract class VersionUpgradePlatform extends PlatformInterface {
     _instance = instance;
   }
 
-  Future<String?> getPlatformVersion() {
-    throw UnimplementedError('platformVersion() has not been implemented.');
+  abstract Stream<int> progressStream;
+
+  Future<dynamic> downloadApk(String url, String packageName) {
+    throw UnimplementedError('downloadApk() has not been implemented.');
   }
 }
